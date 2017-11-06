@@ -8,6 +8,7 @@ import socket
 from Settings import HOST, PORT, PASS, IDENT, CHANNEL
 import random
 import urllib, json
+import time
 
 def openSocket():
 	s = socket.socket()
@@ -33,7 +34,8 @@ def joinRoom(s):
 		for line in temp:
 			print(line)
 			Loading = loadingComplete(line)
-	#sendMessage(s, "Kappa") #sends a message after connected to room
+	#sendMessage(s, "Here I am") #sends a message to the chat after connection to room
+	print "I am now connected to the room: " + CHANNEL
 	
 def loadingComplete(line):
 	if("End of /NAMES list" in line):
@@ -57,6 +59,8 @@ def scramble(sentence):
    random.shuffle(split)  # This shuffles the list in-place.
    return ' '.join(split)  # Turn the list back into a string
 
+
+
 #main program
 #this url returns the current chatters in the channel in json format
 url = "https://tmi.twitch.tv/group/user/"+CHANNEL+"/chatters"
@@ -70,11 +74,21 @@ readbuffer = ""
 #grab a random user when we start the program
 random_user_index=random.randint(0,len(data["chatters"]["viewers"])-1)
 user_2_copy = data["chatters"]["viewers"][random_user_index]
-#user_2_copy="username" #or just input the user's name here
 print "The user I am copying is: " + user_2_copy
 
+#start timer (grab a new user every 20 seconds)
+getNewUserTime = time.time() + 20
+
+#main loop
 while True:
 
+	#find another user to copy if time is up
+	if time.time() >= getNewUserTime:
+		random_user_index=random.randint(0,len(data["chatters"]["viewers"])-1)
+		user_2_copy = data["chatters"]["viewers"][random_user_index]
+		print "The user I am copying is: " + user_2_copy
+		getNewUserTime = time.time() + 20 #reset timer
+		
 	readbuffer = readbuffer + s.recv(1024)
 	temp = string.split(readbuffer, "\n")
 	readbuffer = temp.pop()
@@ -87,7 +101,6 @@ while True:
 		user = getUser(line) #get the user that sent the last message to the chat
 		if user == user_2_copy:
 			message = getMessage(line) #get our user's message
-			#uncomment the line below to randomly capitalize letters in message
-			#message = "".join( random.choice([c.upper(), c ]) for c in message )
-			sendMessage(s, message) #send message to chat :)
+			#message = "".join( random.choice([c.upper(), c ]) for c in message ) #randomly capitalize letters in message
+			sendMessage(s, message + " ") #send message to chat :)
 			break
